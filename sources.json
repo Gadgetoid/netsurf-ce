@@ -1,0 +1,19 @@
+[
+  {"name": "netsurf", "url": "https://github.com/netsurf-browser/netsurf.git", "commit": "d06cd9d71783330729fc87fc210e48b3258c194c"},
+  {"name": "libnsfb", "url": "https://github.com/netsurf-browser/libnsfb.git", "commit": "b701cdce7241c3747ccd78658a365db0983ebe24"},
+  {"name": "libcss", "url": "https://github.com/netsurf-browser/libcss.git", "commit": "bc6a32fe373954a67ea30e42f08a9f4f7d1db9af"},
+  {"name": "libdom", "url": "https://github.com/netsurf-browser/libdom.git", "commit": "f69781e1f062444b5af3f62d431d7d94018da53b"},
+  {"name": "libhubbub", "url": "https://github.com/netsurf-browser/libhubbub.git", "commit": "6651b8cf87a4aa87bcdb2ff024a02659cd3f9402"},
+  {"name": "libparserutils", "url": "https://github.com/netsurf-browser/libparserutils.git", "commit": "6b0cbf086ca8eb8fe74b69f0c9ecf274eb2397ca"},
+  {"name": "libwapcaplet", "url": "https://github.com/netsurf-browser/libwapcaplet.git", "commit": "c7c128d3eb3223b216c974471f82e9337fbcf4ba"},
+  {"name": "libnsutils", "url": "https://github.com/netsurf-browser/libnsutils.git", "commit": "0bd39060740b6163bd50875326654a722df97eb2"},
+  {"name": "libnsgif", "url": "https://github.com/netsurf-browser/libnsgif.git", "commit": "9abf1190d71ab3ae150ae6b29cf14cf7a3594a70"},
+  {"name": "libnsbmp", "url": "https://github.com/netsurf-browser/libnsbmp.git", "commit": "3e5409942cc8a7ea7ef705b035394c6089cef4f8"},
+  {"name": "bearssl", "url": "https://www.bearssl.org/git/BearSSL", "commit": "7bea48e5e850ab4cafbe68d3765cdaba13a86d6f"},
+  {"name": "stb", "url": "https://github.com/nothings/stb.git", "commit": "003501f6d7a8668ce8b6d875e34dd97ad0d5d5b5"},
+  {"name": "zlib", "url": "https://github.com/madler/zlib.git", "commit": "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"},
+  {"name": "printf", "url": "https://github.com/eyalroz/printf.git", "commit": "2d75fef6c605e699d2643267cbaeaaa49b0a2635"},
+  {"name": "freetype", "url": "https://github.com/freetype/freetype.git", "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7"},
+  {"name": "dejavu", "archive": "https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2", "sha256": "fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7"},
+  {"name": "dlmalloc", "file": "https://gee.cs.oswego.edu/pub/misc/malloc.c", "sha256": "be7be56b40b4b31417e74e77687f9b96127ea6cae534cf236aee40a4c739508d"}
+]

@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Phil Howard <phil@pimoroni.com>
+Date: Thu, 29 Oct 2026 11:38:03 +0000
+Subject: [PATCH] Add a key code range for Unicode characters
+
+
+diff --git a/include/libnsfb_event.h b/include/libnsfb_event.h
+index f98b5ba..629e928 100644
+--- a/include/libnsfb_event.h
++++ b/include/libnsfb_event.h
+@@ -177,6 +177,8 @@ enum nsfb_key_code_e {
+     NSFB_KEY_MOUSE_4 = 404,
+     NSFB_KEY_MOUSE_5 = 405,
+ 
++    NSFB_KEY_UNICODE = 0x10000, /**< Base for a Unicode character: NSFB_KEY_UNICODE + code point */
++
+ };
+ 
+ enum nsfb_control_e {

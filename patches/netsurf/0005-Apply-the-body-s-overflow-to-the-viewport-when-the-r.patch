@@ -1,0 +1,166 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Phil Howard <phil@pimoroni.com>
+Date: Thu, 29 Oct 2026 12:48:48 +0000
+Subject: [PATCH] Apply the body's overflow to the viewport when the root's is
+ visible
+
+
+diff --git a/content/handlers/html/box_inspect.c b/content/handlers/html/box_inspect.c
+index 6591b64..430ca47 100644
+--- a/content/handlers/html/box_inspect.c
++++ b/content/handlers/html/box_inspect.c
+@@ -168,7 +168,8 @@ box_contains_point(const css_unit_ctx *unit_len_ctx,
+ 		return true;
+ 	}
+ 	if ((box->style && css_computed_overflow_x(box->style) ==
+-	     CSS_OVERFLOW_VISIBLE) || !box->style) {
++	     CSS_OVERFLOW_VISIBLE) || !box->style ||
++	    box_overflow_propagated(box)) {
+ 		if (box->descendant_x0 <= x &&
+ 		    x < box->descendant_x1) {
+ 			*physically = false;
+@@ -176,7 +177,8 @@ box_contains_point(const css_unit_ctx *unit_len_ctx,
+ 		}
+ 	}
+ 	if ((box->style && css_computed_overflow_y(box->style) ==
+-	     CSS_OVERFLOW_VISIBLE) || !box->style) {
++	     CSS_OVERFLOW_VISIBLE) || !box->style ||
++	    box_overflow_propagated(box)) {
+ 		if (box->descendant_y0 <= y &&
+ 		    y < box->descendant_y1) {
+ 			*physically = false;
+@@ -825,6 +827,34 @@ void box_dump(FILE *stream, struct box *box, unsigned int depth, bool style)
+ }
+ 
+ 
++/* exported interface documented in html/box_inspect.h */
++bool box_overflow_propagated(const struct box *box)
++{
++	const struct box *root;
++	dom_html_element_type tag_type;
++
++	if (box == NULL || box->node == NULL || box->parent == NULL ||
++			box->parent->parent != NULL) {
++		return false;
++	}
++
++	root = box->parent;
++	if (root->style == NULL ||
++			css_computed_overflow_x(root->style) !=
++					CSS_OVERFLOW_VISIBLE ||
++			css_computed_overflow_y(root->style) !=
++					CSS_OVERFLOW_VISIBLE) {
++		return false;
++	}
++
++	if (dom_html_element_get_tag_type(box->node, &tag_type) != DOM_NO_ERR) {
++		return false;
++	}
++
++	return tag_type == DOM_HTML_ELEMENT_TYPE_BODY;
++}
++
++
+ /* exported interface documented in html/box.h */
+ bool box_vscrollbar_present(const struct box * const box)
+ {
+diff --git a/content/handlers/html/box_inspect.h b/content/handlers/html/box_inspect.h
+index a218326..776961d 100644
+--- a/content/handlers/html/box_inspect.h
++++ b/content/handlers/html/box_inspect.h
+@@ -104,6 +104,19 @@ void box_dump(FILE *stream, struct box *box, unsigned int depth, bool style);
+ bool box_vscrollbar_present(const struct box *box);
+ 
+ 
++/**
++ * Whether a box's overflow applies to the viewport instead of the box
++ *
++ * CSS 2.1 section 11.1.1: when the root element's overflow is visible,
++ * the body element's overflow applies to the viewport and the body is
++ * treated as overflow visible.
++ *
++ * \param box box to check
++ * \return true if the box's overflow should be treated as visible
++ */
++bool box_overflow_propagated(const struct box *box);
++
++
+ /**
+  * Determine if a box has a horizontal scrollbar.
+  *
+diff --git a/content/handlers/html/layout.c b/content/handlers/html/layout.c
+index d3b6d8f..b988281 100644
+--- a/content/handlers/html/layout.c
++++ b/content/handlers/html/layout.c
+@@ -1178,7 +1178,8 @@ layout_next_margin_block(const css_unit_ctx *unit_len_ctx,
+ 					box->padding[TOP] ||
+ 					(box->style &&
+ 					css_computed_overflow_y(box->style) !=
+-					CSS_OVERFLOW_VISIBLE) ||
++					CSS_OVERFLOW_VISIBLE &&
++					!box_overflow_propagated(box)) ||
+ 					(box->type == BOX_INLINE_CONTAINER &&
+ 					!box_is_first_child(box))) {
+ 				/* Collapse to this box; return it */
+@@ -1529,7 +1530,7 @@ static void layout_block_add_scrollbar(struct box *box, int which)
+ 
+ 	assert(box->type == BOX_BLOCK && (which == RIGHT || which == BOTTOM));
+ 
+-	if (box->style == NULL)
++	if (box->style == NULL || box_overflow_propagated(box))
+ 		return;
+ 
+ 	overflow_x = css_computed_overflow_x(box->style);
+@@ -3638,7 +3639,7 @@ bool layout_block_context(
+ 					css_computed_clear(box->style));
+ 
+ 		/* Find box's overflow properties */
+-		if (box->style) {
++		if (box->style && !box_overflow_propagated(box)) {
+ 			overflow_x = css_computed_overflow_x(box->style);
+ 			overflow_y = css_computed_overflow_y(box->style);
+ 		}
+@@ -5208,8 +5209,9 @@ layout_get_box_bbox(
+ 	/* To stop the top of text getting clipped when css line-height is
+ 	 * reduced, we increase the top of the descendant bbox. */
+ 	if (box->type == BOX_BLOCK && box->style != NULL &&
+-			css_computed_overflow_y(box->style) ==
+-					CSS_OVERFLOW_VISIBLE &&
++			(css_computed_overflow_y(box->style) ==
++					CSS_OVERFLOW_VISIBLE ||
++			 box_overflow_propagated(box)) &&
+ 			box->object == NULL) {
+ 		css_fixed font_size = 0;
+ 		css_unit font_unit = CSS_UNIT_PT;
+@@ -5253,7 +5255,7 @@ layout_update_descendant_bbox(
+ 	enum css_overflow_e overflow_x = CSS_OVERFLOW_VISIBLE;
+ 	enum css_overflow_e overflow_y = CSS_OVERFLOW_VISIBLE;
+ 
+-	if (child->style != NULL) {
++	if (child->style != NULL && !box_overflow_propagated(child)) {
+ 		overflow_x = css_computed_overflow_x(child->style);
+ 		overflow_y = css_computed_overflow_y(child->style);
+ 	}
+@@ -5365,7 +5367,8 @@ static void layout_calculate_descendant_bboxes(
+ 
+ 		layout_calculate_descendant_bboxes(unit_len_ctx, child);
+ 
+-		if (box->style && css_computed_overflow_x(box->style) ==
++		if (box->style && !box_overflow_propagated(box) &&
++				css_computed_overflow_x(box->style) ==
+ 				CSS_OVERFLOW_HIDDEN &&
+ 				css_computed_overflow_y(box->style) ==
+ 				CSS_OVERFLOW_HIDDEN)
+diff --git a/content/handlers/html/redraw.c b/content/handlers/html/redraw.c
+index f770699..b343252 100644
+--- a/content/handlers/html/redraw.c
++++ b/content/handlers/html/redraw.c
+@@ -1253,7 +1253,7 @@ bool html_redraw_box(const html_content *html, struct box *box,
+ 	if (html_redraw_printing && (box->flags & PRINTED))
+ 		return true;
+ 
+-	if (box->style != NULL) {
++	if (box->style != NULL && !box_overflow_propagated(box)) {
+ 		overflow_x = css_computed_overflow_x(box->style);
+ 		overflow_y = css_computed_overflow_y(box->style);
+ 	}

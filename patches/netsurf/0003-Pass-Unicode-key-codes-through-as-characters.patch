@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Phil Howard <phil@pimoroni.com>
+Date: Thu, 29 Oct 2026 11:38:03 +0000
+Subject: [PATCH] Pass Unicode key codes through as characters
+
+
+diff --git a/frontends/framebuffer/fbtk/event.c b/frontends/framebuffer/fbtk/event.c
+index 7a58091..4516f71 100644
+--- a/frontends/framebuffer/fbtk/event.c
++++ b/frontends/framebuffer/fbtk/event.c
+@@ -302,6 +302,10 @@ fbtk_keycode_to_ucs4(int code, fbtk_modifier_type mods)
+ {
+ 	int ucs4 = -1;
+ 
++	if (code >= NSFB_KEY_UNICODE) {
++		return code - NSFB_KEY_UNICODE;
++	}
++
+ 	if (mods & FBTK_MOD_LSHIFT || mods & FBTK_MOD_RSHIFT) {
+ 		if ((code >= 0) && (code < (int) NOF_ELEMENTS(sh_keymap)))
+ 			ucs4 = sh_keymap[code];

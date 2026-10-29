@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Phil Howard <phil@pimoroni.com>
+Date: Thu, 29 Oct 2026 10:36:32 +0000
+Subject: [PATCH] Add a Windows CE surface type
+
+
+diff --git a/include/libnsfb.h b/include/libnsfb.h
+index 674df65..ae303e6 100644
+--- a/include/libnsfb.h
++++ b/include/libnsfb.h
+@@ -42,6 +42,7 @@ enum nsfb_type_e {
+     NSFB_SURFACE_LINUX, /**< Linux framebuffer surface */
+     NSFB_SURFACE_ABLE, /**< ABLE framebuffer surface */
+     NSFB_SURFACE_RAM, /**< RAM surface */
++    NSFB_SURFACE_WINCE, /**< Windows CE surface */
+     NSFB_SURFACE_COUNT, /**< The number of surface kinds */
+ };
+ 

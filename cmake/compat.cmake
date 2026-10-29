@@ -1,0 +1,12 @@
+set(compat_root "${CMAKE_CURRENT_LIST_DIR}/../compat")
+set(printf_source "${NETSURF_CE_SOURCES}/printf/src/printf/printf.c")
+
+file(GLOB ce_posix_sources "${compat_root}/src/*.c")
+add_library(ce_posix STATIC ${ce_posix_sources} "${printf_source}")
+target_include_directories(ce_posix SYSTEM BEFORE PUBLIC "${compat_root}/include")
+target_include_directories(ce_posix PRIVATE "${NETSURF_CE_SOURCES}/printf/src" "${NETSURF_CE_SOURCES}")
+target_compile_definitions(ce_posix PRIVATE UNICODE _UNICODE UNDER_CE WINCE JORNADA_ALL_DECLARATIONS PRINTF_INCLUDE_CONFIG_H=0)
+target_compile_options(ce_posix PRIVATE -std=gnu99 -Wall -Werror -Wno-unused-parameter)
+set_source_files_properties("${printf_source}" "${compat_root}/src/memory.c" PROPERTIES COMPILE_OPTIONS -w)
+set_source_files_properties("${compat_root}/src/bytes.c" PROPERTIES COMPILE_OPTIONS "-O2;-fno-builtin")
+target_link_libraries(ce_posix PUBLIC jornada::headers)

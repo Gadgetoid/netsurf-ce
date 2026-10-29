@@ -1,0 +1,182 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Phil Howard <phil@pimoroni.com>
+Date: Thu, 29 Oct 2026 11:25:52 +0000
+Subject: [PATCH] Drag to scroll the framebuffer browser window, with coasting
+
+
+diff --git a/frontends/framebuffer/gui.c b/frontends/framebuffer/gui.c
+index 5bfc822..89776dc 100644
+--- a/frontends/framebuffer/gui.c
++++ b/frontends/framebuffer/gui.c
+@@ -88,7 +88,8 @@ static struct gui_drag {
+ 	enum state {
+ 		GUI_DRAG_NONE,
+ 		GUI_DRAG_PRESSED,
+-		GUI_DRAG_DRAG
++		GUI_DRAG_DRAG,
++		GUI_DRAG_PAN
+ 	} state;
+ 	int button;
+ 	int x;
+@@ -96,6 +97,21 @@ static struct gui_drag {
+ 	bool grabbed_pointer;
+ } gui_drag;
+ 
++#define PAN_THRESHOLD 8
++#define PAN_COAST_INTERVAL 20
++#define PAN_COAST_DECAY 92
++#define PAN_COAST_MINIMUM 60
++#define PAN_RELEASE_LIMIT 100
++
++static struct gui_pan {
++	int last_x;
++	int last_y;
++	uint64_t last_time;
++	int velocity_x;
++	int velocity_y;
++	struct gui_window *coasting;
++} gui_pan;
++
+ 
+ /**
+  * Cause an abnormal program termination.
+@@ -185,6 +201,72 @@ widget_scroll_y(struct gui_window *gw, int y, bool abs)
+ }
+ 
+ /* queue a window scroll */
++static void
++widget_scroll_x(struct gui_window *gw, int x, bool abs);
++
++static void
++fb_pan_coast(void *p)
++{
++	struct gui_window *gw = p;
++
++	if ((abs(gui_pan.velocity_x) < PAN_COAST_MINIMUM) &&
++	    (abs(gui_pan.velocity_y) < PAN_COAST_MINIMUM)) {
++		gui_pan.coasting = NULL;
++		return;
++	}
++
++	widget_scroll_x(gw, gui_pan.velocity_x * PAN_COAST_INTERVAL / 1000, false);
++	widget_scroll_y(gw, gui_pan.velocity_y * PAN_COAST_INTERVAL / 1000, false);
++	gui_pan.velocity_x = gui_pan.velocity_x * PAN_COAST_DECAY / 100;
++	gui_pan.velocity_y = gui_pan.velocity_y * PAN_COAST_DECAY / 100;
++	framebuffer_schedule(PAN_COAST_INTERVAL, fb_pan_coast, gw);
++}
++
++static bool
++fb_pan_stop(void)
++{
++	if (gui_pan.coasting == NULL) {
++		return false;
++	}
++	framebuffer_schedule(-1, fb_pan_coast, gui_pan.coasting);
++	gui_pan.coasting = NULL;
++	return true;
++}
++
++static void
++fb_pan_move(struct gui_window *gw, int x, int y)
++{
++	uint64_t now;
++	int elapsed;
++	int dx = gui_pan.last_x - x;
++	int dy = gui_pan.last_y - y;
++
++	nsu_getmonotonic_ms(&now);
++	elapsed = (int)(now - gui_pan.last_time);
++	if (elapsed > 0) {
++		gui_pan.velocity_x = (gui_pan.velocity_x + dx * 1000 / elapsed) / 2;
++		gui_pan.velocity_y = (gui_pan.velocity_y + dy * 1000 / elapsed) / 2;
++	}
++	widget_scroll_x(gw, dx, false);
++	widget_scroll_y(gw, dy, false);
++	gui_pan.last_x = x;
++	gui_pan.last_y = y;
++	gui_pan.last_time = now;
++}
++
++static void
++fb_pan_release(struct gui_window *gw)
++{
++	uint64_t now;
++
++	nsu_getmonotonic_ms(&now);
++	if (now - gui_pan.last_time > PAN_RELEASE_LIMIT) {
++		return;
++	}
++	gui_pan.coasting = gw;
++	framebuffer_schedule(PAN_COAST_INTERVAL, fb_pan_coast, gw);
++}
++
+ static void
+ widget_scroll_x(struct gui_window *gw, int x, bool abs)
+ {
+@@ -675,6 +757,10 @@ fb_browser_window_click(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 	case NSFB_EVENT_KEY_DOWN:
+ 		switch (cbi->event->value.keycode) {
+ 		case NSFB_KEY_MOUSE_1:
++			if (fb_pan_stop()) {
++				gui_drag.state = GUI_DRAG_NONE;
++				return 1;
++			}
+ 			browser_window_mouse_click(gw->bw,
+ 					BROWSER_MOUSE_PRESS_1, x, y);
+ 			gui_drag.state = GUI_DRAG_PRESSED;
+@@ -721,6 +807,19 @@ fb_browser_window_click(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 
+ 		switch (cbi->event->value.keycode) {
+ 		case NSFB_KEY_MOUSE_1:
++			if (gui_drag.state == GUI_DRAG_PAN) {
++				if (gui_drag.grabbed_pointer) {
++					fbtk_tgrab_pointer(widget);
++					gui_drag.grabbed_pointer = false;
++				}
++				gui_drag.state = GUI_DRAG_NONE;
++				browser_window_mouse_track(gw->bw, 0, x, y);
++				fb_pan_release(gw);
++				break;
++			}
++			if (gui_drag.state == GUI_DRAG_NONE) {
++				break;
++			}
+ 			if (gui_drag.state == GUI_DRAG_DRAG) {
+ 				/* End of a drag, rather than click */
+ 
+@@ -815,6 +914,25 @@ fb_browser_window_move(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 	int x = cbi->x + bwidget->scrollx;
+ 	int y = cbi->y + bwidget->scrolly;
+ 
++	if (gui_drag.state == GUI_DRAG_PAN) {
++		fb_pan_move(gw, cbi->x, cbi->y);
++		return 0;
++	}
++
++	if (gui_drag.state == GUI_DRAG_PRESSED && gui_drag.button == 1 &&
++			(abs(x - gui_drag.x) > PAN_THRESHOLD ||
++			 abs(y - gui_drag.y) > PAN_THRESHOLD)) {
++		gui_drag.grabbed_pointer = fbtk_tgrab_pointer(widget);
++		gui_drag.state = GUI_DRAG_PAN;
++		gui_pan.last_x = gui_drag.x - bwidget->scrollx;
++		gui_pan.last_y = gui_drag.y - bwidget->scrolly;
++		gui_pan.velocity_x = 0;
++		gui_pan.velocity_y = 0;
++		nsu_getmonotonic_ms(&gui_pan.last_time);
++		fb_pan_move(gw, cbi->x, cbi->y);
++		return 0;
++	}
++
+ 	if (gui_drag.state == GUI_DRAG_PRESSED &&
+ 			(abs(x - gui_drag.x) > 5 ||
+ 			 abs(y - gui_drag.y) > 5)) {
+@@ -1851,6 +1969,9 @@ gui_window_create(struct browser_window *bw,
+ static void
+ gui_window_destroy(struct gui_window *gw)
+ {
++	if (gui_pan.coasting == gw) {
++		fb_pan_stop();
++	}
+ 	gui_window_remove_from_window_list(gw);
+ 
+ 	fbtk_destroy_widget(gw->window);

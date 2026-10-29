@@ -1,0 +1,243 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Phil Howard <phil@pimoroni.com>
+Date: Thu, 29 Oct 2026 12:40:35 +0000
+Subject: [PATCH] Select all and UTF-8 editing in the framebuffer text widget
+
+
+diff --git a/frontends/framebuffer/fbtk/text.c b/frontends/framebuffer/fbtk/text.c
+index 9c96dce..747ead4 100644
+--- a/frontends/framebuffer/fbtk/text.c
++++ b/frontends/framebuffer/fbtk/text.c
+@@ -28,6 +28,7 @@
+ #include <libnsfb_event.h>
+ 
+ #include "utils/log.h"
++#include "utils/utf8.h"
+ #include "netsurf/browser_window.h"
+ #include "netsurf/plotters.h"
+ 
+@@ -146,6 +147,17 @@ fb_redraw_text(fbtk_widget_t *widget, fbtk_callback_info *cbi )
+ 			x +=  scroll;
+ 		}
+ 
++		if (widget->u.text.selected && widget->u.text.len > 0) {
++			nsfb_bbox_t selection;
++
++			selection.x0 = x;
++			selection.y0 = bbox.y0 + padding;
++			selection.x1 = x + widget->u.text.width;
++			selection.y1 = bbox.y1 - padding;
++			nsfb_plot_rectangle_fill(root->u.root.fb, &selection,
++					0xFFFFD8A0);
++		}
++
+ 		/* Call the fb text plotting, baseline is 3/4 down the font */
+ 		ctx.plot->text(&ctx,
+ 			       &font_style,
+@@ -287,6 +299,7 @@ fb_text_input_remove_caret_cb(fbtk_widget_t *widget)
+ {
+ 	int c_x, c_y, c_h;
+ 
++	widget->u.text.selected = false;
+ 	if (fbtk_get_caret(widget, &c_x, &c_y, &c_h)) {
+ 		fbtk_request_redraw(widget);
+ 	}
+@@ -345,15 +358,55 @@ text_input(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 		return 0;
+ 	}
+ 
++	if (widget->u.text.selected) {
++		switch (value) {
++		case NSFB_KEY_RSHIFT:
++		case NSFB_KEY_LSHIFT:
++		case NSFB_KEY_RCTRL:
++		case NSFB_KEY_LCTRL:
++			break;
++
++		case NSFB_KEY_RIGHT:
++		case NSFB_KEY_LEFT:
++		case NSFB_KEY_HOME:
++		case NSFB_KEY_END:
++		case NSFB_KEY_RETURN:
++			widget->u.text.selected = false;
++			break;
++
++		default:
++			if (modifier & (FBTK_MOD_LCTRL | FBTK_MOD_RCTRL)) {
++				break;
++			}
++			widget->u.text.selected = false;
++			widget->u.text.idx = 0;
++			widget->u.text.len = 0;
++			widget->u.text.text[0] = '\0';
++			widget->u.text.width = 0;
++			caret_moved = true;
++			if (value == NSFB_KEY_BACKSPACE ||
++					value == NSFB_KEY_DELETE) {
++				value = NSFB_KEY_UNKNOWN;
++			}
++			break;
++		}
++	}
++
+ 	switch (value) {
+-	case NSFB_KEY_BACKSPACE:
++	case NSFB_KEY_UNKNOWN:
++		break;
++
++	case NSFB_KEY_BACKSPACE: {
++		size_t previous;
++
+ 		if (widget->u.text.idx <= 0)
+ 			break;
+-		memmove(widget->u.text.text + widget->u.text.idx - 1,
++		previous = utf8_prev(widget->u.text.text, widget->u.text.idx);
++		memmove(widget->u.text.text + previous,
+ 				widget->u.text.text + widget->u.text.idx,
+ 				widget->u.text.len - widget->u.text.idx);
+-		widget->u.text.idx--;
+-		widget->u.text.len--;
++		widget->u.text.len -= widget->u.text.idx - previous;
++		widget->u.text.idx = previous;
+ 		widget->u.text.text[widget->u.text.len] = 0;
+ 
+ 		fb_font_width(&font_style, widget->u.text.text,
+@@ -361,6 +414,7 @@ text_input(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 
+ 		caret_moved = true;
+ 		break;
++	}
+ 
+ 	case NSFB_KEY_RETURN:
+ 		widget->u.text.enter(widget->u.text.pw, widget->u.text.text);
+@@ -369,7 +423,10 @@ text_input(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 	case NSFB_KEY_RIGHT:
+ 		if (widget->u.text.idx < widget->u.text.len) {
+ 			if (modifier == FBTK_MOD_CLEAR)
+-				widget->u.text.idx++;
++				widget->u.text.idx = utf8_next(
++						widget->u.text.text,
++						widget->u.text.len,
++						widget->u.text.idx);
+ 			else
+ 				widget->u.text.idx = widget->u.text.len;
+ 
+@@ -380,7 +437,9 @@ text_input(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 	case NSFB_KEY_LEFT:
+ 		if (widget->u.text.idx > 0) {
+ 			if (modifier == FBTK_MOD_CLEAR)
+-				widget->u.text.idx--;
++				widget->u.text.idx = utf8_prev(
++						widget->u.text.text,
++						widget->u.text.idx);
+ 			else
+ 				widget->u.text.idx = 0;
+ 
+@@ -431,6 +490,11 @@ text_input(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 	default:
+ 		if (modifier & FBTK_MOD_LCTRL || modifier & FBTK_MOD_RCTRL) {
+ 			/* CTRL pressed, don't enter any text */
++			if (value == NSFB_KEY_a && widget->u.text.len > 0) {
++				widget->u.text.selected = true;
++				widget->u.text.idx = widget->u.text.len;
++				caret_moved = true;
++			}
+ 			if (value == NSFB_KEY_u) {
+ 				/* CTRL+U: clear writable */
+ 				widget->u.text.idx = 0;
+@@ -442,21 +506,33 @@ text_input(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 			break;
+ 		}
+ 
+-		/* allow for new character and null */
+-		temp = realloc(widget->u.text.text, widget->u.text.len + 2);
+-		if (temp == NULL) {
+-			break;
+-		}
++		{
++			char encoded[6];
++			int ucs4 = fbtk_keycode_to_ucs4(value, modifier);
++			size_t length;
+ 
+-		widget->u.text.text = temp;
+-		memmove(widget->u.text.text + widget->u.text.idx + 1,
+-				widget->u.text.text + widget->u.text.idx,
+-				widget->u.text.len - widget->u.text.idx);
+-		widget->u.text.text[widget->u.text.idx] =
+-				fbtk_keycode_to_ucs4(value, modifier);
+-		widget->u.text.idx++;
+-		widget->u.text.len++;
+-		widget->u.text.text[widget->u.text.len] = '\0';
++			if (ucs4 <= 0) {
++				break;
++			}
++			length = utf8_from_ucs4(ucs4, encoded);
++
++			/* allow for new character and null */
++			temp = realloc(widget->u.text.text,
++					widget->u.text.len + length + 1);
++			if (temp == NULL) {
++				break;
++			}
++
++			widget->u.text.text = temp;
++			memmove(widget->u.text.text + widget->u.text.idx + length,
++					widget->u.text.text + widget->u.text.idx,
++					widget->u.text.len - widget->u.text.idx);
++			memcpy(widget->u.text.text + widget->u.text.idx,
++					encoded, length);
++			widget->u.text.idx += length;
++			widget->u.text.len += length;
++			widget->u.text.text[widget->u.text.len] = '\0';
++		}
+ 
+ 		fb_font_width(&font_style, widget->u.text.text,
+ 				widget->u.text.len, &widget->u.text.width);
+@@ -493,10 +569,27 @@ text_input_click(fbtk_widget_t *widget, fbtk_callback_info *cbi)
+ 	int border;
+ 	size_t idx;
+ 
++	int caret_x, caret_y, caret_h;
++
+ 	fb_text_font_style(widget, &fh, &border, &font_style);
+ 
+ 	widget->u.text.idx = widget->u.text.len;
+ 
++	if (!fbtk_get_caret(widget, &caret_x, &caret_y, &caret_h) &&
++			widget->u.text.len > 0) {
++		widget->u.text.selected = true;
++		fb_font_width(&font_style, widget->u.text.text,
++				widget->u.text.len, &widget->u.text.idx_offset);
++		fbtk_set_caret(widget, true,
++				widget->u.text.idx_offset + border,
++				border,
++				widget->height - border - border,
++				fb_text_input_remove_caret_cb);
++		fbtk_request_redraw(widget);
++		return 0;
++	}
++	widget->u.text.selected = false;
++
+ 	fb_font_position(&font_style, widget->u.text.text,
+ 			widget->u.text.len, cbi->x - border,
+ 			&idx,
+@@ -556,6 +649,7 @@ fbtk_set_text(fbtk_widget_t *widget, const char *text)
+ 	widget->u.text.text = strdup(text);
+ 	widget->u.text.len = strlen(text);
+ 	widget->u.text.idx = widget->u.text.len;
++	widget->u.text.selected = false;
+ 
+ 
+ 	fb_text_font_style(widget, &fh, &border, &font_style);
+diff --git a/frontends/framebuffer/fbtk/widget.h b/frontends/framebuffer/fbtk/widget.h
+index 5622723..027595d 100644
+--- a/frontends/framebuffer/fbtk/widget.h
++++ b/frontends/framebuffer/fbtk/widget.h
+@@ -187,6 +187,7 @@ struct fbtk_widget_s {
+ 			int len; /* text length */
+ 			int width; /* text width in px */
+ 			int idx_offset; /* caret pos in pixels */
++			bool selected; /* all text selected */
+ 		} text;
+ 
+ 		/* application driven widget */
