@@ -52,6 +52,19 @@ async function download(source, url) {
     return data;
 }
 
+function compressionFlag(data) {
+    if (data[0] === 0x1f && data[1] === 0x8b) {
+        return ['-z'];
+    }
+    if (data[0] === 0x42 && data[1] === 0x5a && data[2] === 0x68) {
+        return ['-j'];
+    }
+    if (data[0] === 0xfd && data[1] === 0x37 && data[2] === 0x7a && data[3] === 0x58 && data[4] === 0x5a) {
+        return ['-J'];
+    }
+    return [];
+}
+
 async function fetchDownload(source, directory) {
     const marker = join(directory, '.sha256');
     if (existsSync(marker) && readFileSync(marker, 'utf8') === source.sha256) {
@@ -61,7 +74,7 @@ async function fetchDownload(source, directory) {
     rmSync(directory, { recursive: true, force: true });
     mkdirSync(directory, { recursive: true });
     if (source.archive) {
-        execFileSync('tar', ['-x', '-f', '-', '-C', directory, '--strip-components=1'], { input: data });
+        execFileSync('tar', ['-x', ...compressionFlag(data), '-f', '-', '-C', directory, '--strip-components=1'], { input: data });
     } else {
         writeFileSync(join(directory, basename(new URL(source.file).pathname)), data);
     }
