@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const [debugTool, device, localFolder, remoteFolder] = process.argv.slice(2);
 if (!remoteFolder) {
-    throw new Error('Usage: install.mjs JORNADA_DEBUG DEVICE LOCAL_FOLDER REMOTE_FOLDER');
+    throw new Error('Usage: install.mjs CE_DEBUG DEVICE LOCAL_FOLDER REMOTE_FOLDER');
 }
 
 function debug(...args) {

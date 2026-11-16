@@ -4,7 +4,6 @@
 #include_next <stdio.h>
 #include <sys/types.h>
 
-#define BUFSIZ 1024
 #define FILENAME_MAX 260
 #define L_tmpnam 260
 
@@ -26,7 +25,6 @@ FILE *ce_fdopen(int descriptor, const char *mode);
 void ce_perror(const char *message);
 int ce_fputc(int character, FILE *stream);
 int ce_fputs(const char *text, FILE *stream);
-void setbuf(FILE *stream, char *buffer);
 
 #define printf(...) ce_printf(__VA_ARGS__)
 #define vprintf(...) ce_vprintf(__VA_ARGS__)

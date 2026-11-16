@@ -9,31 +9,25 @@ on:
 permissions:
   contents: write
 
-env:
-  LLVM_URL: https://github.com/Gadgetoid/velo-llvm-builds/releases/download/v3/velo-llvm-v3-linux-x86_64.tar.xz
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/checkout@v7
-        with:
-          repository: Gadgetoid/jornada-72x-tools
-          ref: 71f74221832c0551f8df257491f5b94a771d4057
-          path: jornada-72x-tools
       - name: Install tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq gperf libpng-dev ninja-build
-          mkdir jornada-72x-tools/llvm
-          curl -sSfL "$LLVM_URL" | tar -xJ -C jornada-72x-tools/llvm --strip-components=1
+      - name: CE toolchain
+        run: sh tools/ce-toolchain.sh "$RUNNER_TEMP/ce-toolchain"
       - name: Build
         run: |
           echo "VERSION=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_ENV"
-          make package VERSION="${GITHUB_REF_NAME//\//-}" JORNADA_TOOLCHAIN="$PWD/jornada-72x-tools"
+          make package VERSION="${GITHUB_REF_NAME//\//-}" GRIMACE="$RUNNER_TEMP/ce-toolchain/grimace" GRIMACE_LLVM_ROOT="$RUNNER_TEMP/ce-toolchain/llvm"
+      - name: CE imports
+        run: make check-imports GRIMACE="$RUNNER_TEMP/ce-toolchain/grimace"
       - name: Source archive
-        run: tar --exclude=.git --exclude=./build --exclude=./jornada-72x-tools -czf "build/netsurf-ce-$VERSION-source.tar.gz" .
+        run: tar --exclude=.git --exclude=./build -czf "build/netsurf-ce-$VERSION-source.tar.gz" .
       - uses: actions/upload-artifact@v7
         with:
           name: netsurf-ce-${{ env.VERSION }}

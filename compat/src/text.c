@@ -90,23 +90,6 @@ int strncasecmp(const char *first, const char *second, size_t count) {
     return _strnicmp(first, second, count);
 }
 
-char *strdup(const char *text) {
-    size_t length = strlen(text) + 1;
-    char *copy = malloc(length);
-    if (copy) {
-        memcpy(copy, text, length);
-    }
-    return copy;
-}
-
-size_t strnlen(const char *text, size_t limit) {
-    size_t length = 0;
-    while (length < limit && text[length]) {
-        length++;
-    }
-    return length;
-}
-
 void *memmem(const void *haystack, size_t haystack_length, const void *needle, size_t needle_length) {
     const char *start = haystack;
     if (needle_length == 0) {
@@ -147,30 +130,4 @@ size_t strlcpy(char *destination, const char *source, size_t size) {
         destination[copied] = 0;
     }
     return length;
-}
-
-intmax_t strtoimax(const char *text, char **end, int base) {
-    return strtoll(text, end, base);
-}
-
-uintmax_t strtoumax(const char *text, char **end, int base) {
-    return strtoull(text, end, base);
-}
-
-void *bsearch(const void *key, const void *base, size_t count, size_t size, int (*compare)(const void *, const void *)) {
-    const char *low = base;
-    while (count) {
-        const char *middle = low + (count / 2) * size;
-        int order = compare(key, middle);
-        if (order == 0) {
-            return (void *)middle;
-        }
-        if (order > 0) {
-            low = middle + size;
-            count -= count / 2 + 1;
-        } else {
-            count /= 2;
-        }
-    }
-    return NULL;
 }

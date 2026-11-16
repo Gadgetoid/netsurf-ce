@@ -30,7 +30,7 @@ set_source_files_properties("${framebuffer_root}/gui.c" PROPERTIES COMPILE_DEFIN
 target_compile_options(framebuffer PRIVATE -w)
 target_link_libraries(framebuffer PUBLIC netsurf_core nsfb freetype)
 
-set(platform_definitions UNICODE _UNICODE UNDER_CE WINCE _WINDOWS JORNADA_ALL_DECLARATIONS)
+set(platform_definitions UNICODE _UNICODE UNDER_CE WINCE _WINDOWS GRIMACE_ALL_DECLARATIONS)
 set(platform_options -std=gnu99 -Wall -Werror -Wno-unused-parameter)
 file(GLOB platform_sources "${project_root}/src/platform/*.c")
 list(FILTER platform_sources EXCLUDE REGEX "/(main|profile)\\.c$")
@@ -51,16 +51,11 @@ target_include_directories(glue PRIVATE "${project_root}/src" "${NETSURF_CE_SOUR
 target_compile_options(glue PRIVATE -Wall -Werror -Wno-unused-parameter)
 target_link_libraries(glue PUBLIC framebuffer platform stb_image)
 
-add_executable(netsurf "${project_root}/src/platform/main.c")
+grimace_add_executable(netsurf OUTPUT NetSurf.exe ICON "${netsurf_root}/frontends/windows/res/NetSurf.ico"
+    "${project_root}/src/platform/main.c")
+target_include_directories(netsurf SYSTEM BEFORE PRIVATE "${compat_root}/include")
 target_compile_definitions(netsurf PRIVATE ${platform_definitions})
 target_compile_options(netsurf PRIVATE ${platform_options})
-set_target_properties(netsurf PROPERTIES SUFFIX ".elf")
-target_link_options(netsurf PRIVATE -T "${project_root}/exe.ld" --entry=__jornada_exe_start
+target_link_options(netsurf PRIVATE
     --whole-archive $<TARGET_FILE:glue> $<TARGET_FILE:nsfb> $<TARGET_FILE:ce_posix> --no-whole-archive)
-set_property(TARGET netsurf APPEND PROPERTY LINK_DEPENDS "${project_root}/exe.ld")
-target_link_libraries(netsurf PRIVATE glue jornada::headers jornada::runtime jornada::cxx_runtime jornada::winsock brain_import_coredll)
-add_custom_command(TARGET netsurf POST_BUILD
-    COMMAND "${Python3_EXECUTABLE}" "${JORNADA_TOOLCHAIN}/tools/mkpe.py"
-        "$<TARGET_FILE:netsurf>" "${CMAKE_BINARY_DIR}/NetSurf.exe" --ce-version=5.1
-        "--icon=${netsurf_root}/frontends/windows/res/NetSurf.ico"
-    VERBATIM)
+target_link_libraries(netsurf PRIVATE glue grimace::winsock)

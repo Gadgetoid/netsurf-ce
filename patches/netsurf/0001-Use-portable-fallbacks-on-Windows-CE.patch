@@ -5,10 +5,18 @@ Subject: [PATCH] Use portable fallbacks on Windows CE
 
 
 diff --git a/utils/config.h b/utils/config.h
-index 3914771fd..2eb98b8e8 100644
+index 3914771fd..f58f548b0 100644
 --- a/utils/config.h
 +++ b/utils/config.h
-@@ -54,7 +54,8 @@ char *strndup(const char *s, size_t n);
+@@ -40,6 +40,7 @@
+      !defined(__APPLE__) || \
+      defined(__amigaos4__) || \
+      defined(__HAIKU__) || \
++     defined(_WIN32_WCE) || \
+      (defined(_POSIX_C_SOURCE) && ((_POSIX_C_SOURCE - 0) >= 200809L)) && \
+      !defined(__riscos__))
+ #define HAVE_STRNDUP
+@@ -54,7 +55,8 @@ char *strndup(const char *s, size_t n);
        defined(__HAIKU__) ||			\
        defined(__NetBSD__) ||			\
        defined(__OpenBSD__)) &&			\
@@ -18,7 +26,7 @@ index 3914771fd..2eb98b8e8 100644
  #define HAVE_STRCASESTR
  #else
  #undef HAVE_STRCASESTR
-@@ -65,6 +66,7 @@ char *strcasestr(const char *haystack, const char *needle);
+@@ -65,6 +67,7 @@ char *strcasestr(const char *haystack, const char *needle);
   *  appear not to support the time_t seconds format specifier.
   */
  #if (defined(_WIN32) ||	      \
@@ -26,7 +34,7 @@ index 3914771fd..2eb98b8e8 100644
       defined(__riscos__) ||   \
       defined(__HAIKU__) ||    \
       defined(__BEOS__) ||     \
-@@ -109,22 +111,23 @@ char *strchrnul(const char *s, int c);
+@@ -109,22 +112,23 @@ char *strchrnul(const char *s, int c);
  
  #define HAVE_INETATON
  #if (defined(_WIN32) || \
@@ -53,7 +61,7 @@ index 3914771fd..2eb98b8e8 100644
  #undef HAVE_REALPATH
  char *realpath(const char *path, char *resolved_path);
  #endif
-@@ -135,22 +138,22 @@ char *realpath(const char *path, char *resolved_path);
+@@ -135,22 +139,22 @@ char *realpath(const char *path, char *resolved_path);
  #endif
  
  #define HAVE_SIGPIPE
@@ -80,7 +88,7 @@ index 3914771fd..2eb98b8e8 100644
       defined(__serenity__))
  #undef HAVE_SCANDIR
  #endif
-@@ -158,14 +161,14 @@ char *realpath(const char *path, char *resolved_path);
+@@ -158,14 +162,14 @@ char *realpath(const char *path, char *resolved_path);
  #define HAVE_DIRFD
  #define HAVE_UNLINKAT
  #define HAVE_FSTATAT
@@ -97,7 +105,7 @@ index 3914771fd..2eb98b8e8 100644
  #undef HAVE_REGEX
  #endif
  
-@@ -185,7 +188,7 @@ char *realpath(const char *path, char *resolved_path);
+@@ -185,7 +189,7 @@ char *realpath(const char *path, char *resolved_path);
  #if defined(riscos)
      /* Theme auto-install */
      #define WITH_THEME_INSTALL
