@@ -4,7 +4,9 @@ import shutil
 import zipfile
 
 TIMESTAMP = (2026, 10, 29, 0, 0, 0)
-FOLDER = 'アプリ/NetSurf'
+FOLDER = 'NetSurf'
+SHORTCUT = 'pwsh2-boot/Programs/NetSurf.lnk'
+SHORTCUT_TARGET = '35#"\\Storage Card\\NetSurf\\AppMain.exe"'
 
 RESOURCES = [
     'adblock.css', 'credits.html', 'default.css', 'internal.css', 'licence.html',
@@ -40,9 +42,9 @@ LICENCES = {
 def contents(repository, build, sources):
     framebuffer = os.path.join(sources, 'netsurf/frontends/framebuffer/res')
     files = [
-        ('ReadMe.txt', os.path.join(repository, 'card/ReadMe.txt')),
+        (f'{FOLDER}/ReadMe.txt', os.path.join(repository, 'card/ReadMe.txt')),
         (f'{FOLDER}/AppMain.exe', os.path.join(build, 'NetSurf.exe')),
-        (f'{FOLDER}/index.din', None),
+        (SHORTCUT, SHORTCUT_TARGET.encode('ascii')),
         (f'{FOLDER}/Choices', os.path.join(repository, 'card/Choices')),
         (f'{FOLDER}/Messages', os.path.join(build, 'generated/netsurf/Messages')),
         (f'{FOLDER}/licences/netsurf-ce.txt', os.path.join(repository, 'LICENSE')),
@@ -54,8 +56,8 @@ def contents(repository, build, sources):
 
 
 def read(path):
-    if path is None:
-        return b''
+    if isinstance(path, bytes):
+        return path
     with open(os.path.realpath(path), 'rb') as source:
         return source.read()
 

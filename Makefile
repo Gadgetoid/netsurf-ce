@@ -2,7 +2,7 @@ GRIMACE ?= $(error Set GRIMACE to the grimace directory)
 BUILD ?= build/ce
 VERSION ?= 0.1.0
 CE_DEBUG ?= ce-debug
-INSTALL_PATH ?= /Storage Card/アプリ/NetSurf
+INSTALL_PATH ?= /Storage Card
 
 .PHONY: all sources check-imports package install clean
 
@@ -22,7 +22,7 @@ package: all
 	@echo build/netsurf-ce-$(VERSION).zip
 
 install: package
-	node tools/install.mjs "$(CE_DEBUG)" "$(or $(BRAIN_DEVICE),$(error Set BRAIN_DEVICE to the debug agent address))" "build/package/アプリ/NetSurf" "$(INSTALL_PATH)"
+	node tools/install.mjs "$(CE_DEBUG)" "$(or $(BRAIN_DEVICE),$(error Set BRAIN_DEVICE to the debug agent address))" build/package "$(INSTALL_PATH)"
 
 clean:
 	rm -rf build

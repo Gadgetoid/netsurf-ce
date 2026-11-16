@@ -4,12 +4,14 @@ NetSurf, a small web browser, built for the SHARP Brain PW-SH1, PW-SH2 and
 other Windows CE 6.0 models.
 
 Installing
-1. Copy the アプリ folder from this zip to the root of the microSD card. If the
-   card already has an アプリ folder, copy NetSurf into it.
-2. Put the card in the Brain and open the additional content menu
-   (追加コンテンツ). Choose NetSurf.
+NetSurf runs from a microSD card set up with brainsurgeon
+(https://github.com/grimace-sdk/brainsurgeon).
 
-The Brain needs a network connection (a USB network adapter, for example).
+1. Unzip the NetSurf zip at the root of the card. It adds the NetSurf folder
+   and a shortcut in pwsh2-boot/Programs.
+2. Put the card in the Brain and start it. Choose Start > Programs > NetSurf.
+
+The Brain needs a network connection, from Brainwave or USB RNDIS.
 
 Using it
 - Tap the address bar, type an address and press Enter.

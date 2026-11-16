@@ -2,7 +2,7 @@
 
 [NetSurf](https://www.netsurf-browser.org/) for Windows CE 6.0 on the SHARP Brain (PW-SH1, PW-SH2 and similar). Built on NetSurf's framebuffer frontend, with a Windows CE display surface and an HTTP(S) fetcher over BearSSL.
 
-Releases are a zip to copy to the microSD card: see [card/ReadMe.txt](card/ReadMe.txt).
+Releases are a zip to unzip at the root of a [brainsurgeon](https://github.com/grimace-sdk/brainsurgeon) microSD card: see [card/ReadMe.txt](card/ReadMe.txt).
 
 ## Building
 
@@ -23,7 +23,7 @@ make install GRIMACE=... BRAIN_DEVICE=host:port                        # copies 
 - `compat/`: the POSIX and C library parts that coredll and grimace's runtime lack, a C99 printf that logs stdout and stderr to NetSurf.log, and UTF-8 file paths.
 - `src/platform/`: the Windows side: entry point, window and input, HTTP and TLS on worker threads.
 - `src/netsurf/`: the NetSurf side: libnsfb surface, `http`/`https` fetcher, PNG and JPEG decoding with stb_image.
-- `card/`: files shipped in the zip.
+- `card/`: files shipped in the zip. The app goes in `NetSurf/`, with a shortcut in `pwsh2-boot/Programs/NetSurf.lnk`.
 
 ## Not supported
 
