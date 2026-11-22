@@ -76,7 +76,7 @@ async function fetchDownload(source, directory) {
     if (source.archive) {
         execFileSync('tar', ['-x', ...compressionFlag(data), '-f', '-', '-C', directory, '--strip-components=1'], { input: data });
     } else {
-        writeFileSync(join(directory, basename(new URL(source.file).pathname)), data);
+        writeFileSync(join(directory, basename(decodeURIComponent(new URL(source.file).pathname))), data);
     }
     writeFileSync(marker, source.sha256);
     return source.sha256;

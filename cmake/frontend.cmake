@@ -25,7 +25,8 @@ target_compile_definitions(framebuffer PRIVATE
     "NETSURF_FB_FONT_MONOSPACE=\"DejaVuSansMono.ttf\""
     "NETSURF_FB_FONT_MONOSPACE_BOLD=\"DejaVuSansMono-Bold.ttf\""
     "NETSURF_FB_FONT_CURSIVE=\"DejaVuSerif-Italic.ttf\""
-    "NETSURF_FB_FONT_FANTASY=\"DejaVuSans.ttf\"")
+    "NETSURF_FB_FONT_FANTASY=\"DejaVuSans.ttf\""
+    "NETSURF_FB_FONT_FALLBACK=\"NotoSansJP-Regular.ttf\"")
 set_source_files_properties("${framebuffer_root}/gui.c" PROPERTIES COMPILE_DEFINITIONS main=netsurf_framebuffer_main)
 target_compile_options(framebuffer PRIVATE -w)
 target_link_libraries(framebuffer PUBLIC netsurf_core nsfb freetype)

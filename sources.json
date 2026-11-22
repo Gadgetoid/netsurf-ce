@@ -15,5 +15,7 @@
   {"name": "printf", "url": "https://github.com/eyalroz/printf.git", "commit": "2d75fef6c605e699d2643267cbaeaaa49b0a2635"},
   {"name": "freetype", "url": "https://github.com/freetype/freetype.git", "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7"},
   {"name": "dejavu", "archive": "https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2", "sha256": "fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7"},
+  {"name": "notosansjp", "file": "https://raw.githubusercontent.com/google/fonts/66a36c8c94b1a5d992ee4e7f392fccfe4945767c/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf", "sha256": "c2f3b4d463500a2ddcd3849cded1fceeb9fd6d1c32e6cbecd568453ba50fc68f"},
+  {"name": "notosansjp-ofl", "file": "https://raw.githubusercontent.com/google/fonts/66a36c8c94b1a5d992ee4e7f392fccfe4945767c/ofl/notosansjp/OFL.txt", "sha256": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9"},
   {"name": "dlmalloc", "file": "https://gee.cs.oswego.edu/pub/misc/malloc.c", "sha256": "be7be56b40b4b31417e74e77687f9b96127ea6cae534cf236aee40a4c739508d"}
 ]

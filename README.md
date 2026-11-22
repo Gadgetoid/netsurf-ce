@@ -6,7 +6,7 @@ Releases are a zip to unzip at the root of a [brainsurgeon](https://github.com/g
 
 ## Building
 
-Needs [grimace](https://github.com/grimace-sdk/grimace) with [llvm-builds](https://github.com/grimace-sdk/llvm-builds) v6 or later, CMake, Ninja, Node.js, Python 3, Perl, gperf, pkg-config, libpng and zlib. `tools/ce-toolchain.sh DIRECTORY` fetches the pinned grimace and LLVM.
+Needs [grimace](https://github.com/grimace-sdk/grimace) with [llvm-builds](https://github.com/grimace-sdk/llvm-builds) v6 or later, CMake, Ninja, Node.js, Python 3 with fontTools, Perl, gperf, pkg-config, libpng and zlib. `tools/ce-toolchain.sh DIRECTORY` fetches the pinned grimace and LLVM.
 
 ```sh
 make package GRIMACE=/path/to/grimace GRIMACE_LLVM_ROOT=/path/to/llvm   # build/netsurf-ce-VERSION.zip
