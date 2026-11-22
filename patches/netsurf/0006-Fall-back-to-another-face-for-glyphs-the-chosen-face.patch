@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Phil Howard <phil@pimoroni.com>
+Date: Sun, 22 Nov 2026 15:00:00 +0000
+Subject: [PATCH] Fall back to another face for glyphs the chosen face lacks
+
+
+diff --git a/frontends/framebuffer/font_freetype.c b/frontends/framebuffer/font_freetype.c
+index 3912821..0f7d36b 100644
+--- a/frontends/framebuffer/font_freetype.c
++++ b/frontends/framebuffer/font_freetype.c
+@@ -67,6 +67,7 @@ enum fb_face_e {
+ 	FB_FACE_MONOSPACE_BOLD,
+ 	FB_FACE_CURSIVE,
+ 	FB_FACE_FANTASY,
++	FB_FACE_FALLBACK,
+ 	FB_FACE_COUNT
+ };
+ 
+@@ -302,6 +303,11 @@ bool fb_font_init(void)
+ 		fb_faces[FB_FACE_FANTASY] = fb_face;
+ 	}
+ 
++	/* fallback face, for glyphs the chosen face lacks */
++	fb_faces[FB_FACE_FALLBACK] = fb_new_face(nsoption_charp(fb_face_fallback),
++						 "fallback.ttf",
++						 NETSURF_FB_FONT_FALLBACK);
++
+         
+         /* set the default render mode */
+         if (nsoption_bool(fb_font_monochrome) == true)
+@@ -414,6 +420,18 @@ FT_Glyph fb_getglyph(const plot_font_style_t *fstyle, uint32_t ucs4)
+         glyph_index = FTC_CMapCache_Lookup(ft_cmap_cache, srec.face_id,
+ 			fb_face->cidx, ucs4);
+ 
++	if (glyph_index == 0 && fb_faces[FB_FACE_FALLBACK] != NULL) {
++		fb_faceid_t *fallback = fb_faces[FB_FACE_FALLBACK];
++		FT_UInt fallback_index;
++
++		fallback_index = FTC_CMapCache_Lookup(ft_cmap_cache,
++				(FTC_FaceID)fallback, fallback->cidx, ucs4);
++		if (fallback_index != 0) {
++			srec.face_id = (FTC_FaceID)fallback;
++			glyph_index = fallback_index;
++		}
++	}
++
+         error = FTC_ImageCache_LookupScaler(ft_image_cache, 
+                                             &srec, 
+                                             FT_LOAD_RENDER | 
+diff --git a/frontends/framebuffer/options.h b/frontends/framebuffer/options.h
+index eee6f4b..6097aa0 100644
+--- a/frontends/framebuffer/options.h
++++ b/frontends/framebuffer/options.h
+@@ -62,6 +62,7 @@ NSOPTION_STRING(fb_face_monospace, NULL)
+ NSOPTION_STRING(fb_face_monospace_bold, NULL)
+ NSOPTION_STRING(fb_face_cursive, NULL)
+ NSOPTION_STRING(fb_face_fantasy, NULL)
++NSOPTION_STRING(fb_face_fallback, NULL)
+ 
+ /*
+  * Local Variables:

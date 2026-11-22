@@ -1,4 +1,5 @@
 import argparse
+import io
 import os
 import shutil
 import zipfile
@@ -19,6 +20,10 @@ FONTS = [
     'DejaVuSansMono.ttf', 'DejaVuSansMono-Bold.ttf',
 ]
 
+FALLBACK_FONT = 'NotoSansJP-Regular.ttf'
+FALLBACK_SOURCE = 'notosansjp/NotoSansJP[wght].ttf'
+FALLBACK_WEIGHT = 400
+
 LICENCES = {
     'netsurf': 'COPYING',
     'libcss': 'COPYING',
@@ -36,6 +41,7 @@ LICENCES = {
     'zlib': 'LICENSE',
     'freetype': 'LICENSE.TXT',
     'dejavu': 'LICENSE',
+    'notosansjp-ofl': 'OFL.txt',
 }
 
 
@@ -51,8 +57,18 @@ def contents(repository, build, sources):
     ]
     files += [(f'{FOLDER}/{name}', os.path.join(framebuffer, name)) for name in RESOURCES]
     files += [(f'{FOLDER}/{name}', os.path.join(sources, 'dejavu/ttf', name)) for name in FONTS]
+    files.append((f'{FOLDER}/{FALLBACK_FONT}', static_instance(os.path.join(sources, FALLBACK_SOURCE), FALLBACK_WEIGHT)))
     files += [(f'{FOLDER}/licences/{name}.txt', os.path.join(sources, name, licence)) for name, licence in LICENCES.items()]
     return files
+
+
+def static_instance(path, weight):
+    from fontTools.ttLib import TTFont
+    from fontTools.varLib.instancer import instantiateVariableFont
+    font = instantiateVariableFont(TTFont(path), {'wght': weight})
+    output = io.BytesIO()
+    font.save(output)
+    return output.getvalue()
 
 
 def read(path):
